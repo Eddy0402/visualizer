@@ -51,7 +51,7 @@ out/main.bin: main.c stm32_p103.c stm32_p103.h FreeRTOSConfig.h stm32f10x_conf.h
 	$(CROSS_COMPILE)objdump -S out/main.elf > out/main.list
 
 qemu: out/main.bin $(QEMU_STM32)
-	$(QEMU_STM32) -M stm32-p103 -kernel main.bin -semihosting
+	$(QEMU_STM32) -M stm32-p103 -kernel out/main.bin -semihosting
 
 qemuauto: out/main.bin gdbscript
 	bash emulate.sh out/main.bin
