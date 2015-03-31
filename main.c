@@ -156,6 +156,12 @@ void queue_str_task2(void *pvParameters)
 	queue_str_task("Hello 2\n\r", 50);
 }
 
+void test_task(void *pvParameters)
+{
+	while(1);
+}
+
+#define TEST_CONTEXT_SWITCH
 int main()
 {
 	logfile = open("log", 4);
@@ -175,6 +181,7 @@ int main()
 	vSemaphoreCreateBinary(serial_tx_wait_sem);
 	serial_rx_queue = xQueueCreate(1, sizeof(serial_ch_msg));
 
+#ifdef TEST_QUEUE
 	/* Create tasks to queue a string to be written to the RS232 port. */
 	xTaskCreate(queue_str_task1,
 	            (signed portCHAR *) "Serial Write 1",
@@ -189,6 +196,16 @@ int main()
 	xTaskCreate(rs232_xmit_msg_task,
 	            (signed portCHAR *) "Serial Xmit Str",
 	            512 /* stack size */, NULL, tskIDLE_PRIORITY + 2, NULL);
+#endif
+
+#ifdef TEST_CONTEXT_SWITCH
+	xTaskCreate(test_task,
+	            (signed portCHAR *) "Test context switch task 1",
+	            512 /* stack size */, NULL, tskIDLE_PRIORITY + 2, NULL);
+	xTaskCreate(test_task,
+	            (signed portCHAR *) "Test context switch task 2",
+	            512 /* stack size */, NULL, tskIDLE_PRIORITY + 2, NULL);
+#endif
 
 	/* Start running the tasks. */
 	vTaskStartScheduler();
