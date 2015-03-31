@@ -12,6 +12,13 @@
 
 #define NVIC_INTERRUPTx_PRIORITY ( ( volatile unsigned char *) 0xE000E400 )
 
+/* Constants required to manipulate the NVIC. */
+#define portNVIC_SYSTICK_CTRL		( ( volatile unsigned long *) 0xe000e010 )
+#define portNVIC_SYSTICK_LOAD		( ( volatile unsigned long *) 0xe000e014 )
+#define portNVIC_SYSTICK_CURRENT		( ( volatile unsigned long *) 0xe000e018 )
+#define portNVIC_INT_CTRL			( ( volatile unsigned long *) 0xe000ed04 )
+#define portNVIC_SYSPRI2			( ( volatile unsigned long *) 0xe000ed20 )
+
 int logfile = 0;
 
 int syscall(int number, ...) __attribute__((naked));
@@ -230,18 +237,18 @@ int _snprintf_int(int num, char *buf, int buf_size)
 
 unsigned int get_reload()
 {
-	return *(uint32_t *) 0xE000E014;
+	return *(uint32_t *) portNVIC_SYSTICK_LOAD;
 }
 
 unsigned int get_current()
 {
-	return *(uint32_t *) 0xE000E018;
+	return *(uint32_t *) portNVIC_SYSTICK_CURRENT;
 }
 
 unsigned int get_time()
 {
-	static unsigned int const *reload = (void *) 0xE000E014;
-	static unsigned int const *current = (void *) 0xE000E018;
+	static unsigned int const *reload = (void *) portNVIC_SYSTICK_LOAD;
+	static unsigned int const *current = (void *) portNVIC_SYSTICK_CURRENT;
 	static const unsigned int scale = 1000000 / configTICK_RATE_HZ;
 					/* microsecond */
 
