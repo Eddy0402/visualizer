@@ -99,17 +99,6 @@ char receive_byte()
 	return msg.ch;
 }
 
-void led_flash_task(void *pvParameters)
-{
-	while (1) {
-		/* Toggle the LED. */
-		GPIOC->ODR = GPIOC->ODR ^ 0x00001000;
-
-		/* Wait one second. */
-		vTaskDelay(100);
-	}
-}
-
 void rs232_xmit_msg_task(void *pvParameters)
 {
 	serial_str_msg msg;
@@ -145,9 +134,8 @@ void queue_str_task(const char *str, int delay)
 		/* Post the message.  Keep on trying until it is successful. */
 		while (!xQueueSendToBack(serial_str_queue, &msg,
 		                         portMAX_DELAY));
-
 		/* Wait. */
-		vTaskDelay(delay);
+		vTaskDelay(1);
 	}
 }
 
@@ -159,46 +147,6 @@ void queue_str_task1(void *pvParameters)
 void queue_str_task2(void *pvParameters)
 {
 	queue_str_task("Hello 2\n\r", 50);
-}
-
-void serial_readwrite_task(void *pvParameters)
-{
-	serial_str_msg msg;
-	char ch;
-	int curr_char;
-	int done;
-
-	/* Prepare the response message to be queued. */
-	strcpy(msg.str, "Got:");
-
-	while (1) {
-		curr_char = 4;
-		done = 0;
-		do {
-			/* Receive a byte from the RS232 port (this call will
-			 * block). */
-			ch = receive_byte();
-
-			/* If the byte is an end-of-line type character, then
-			 * finish the string and inidcate we are done.
-			 */
-			if ((ch == '\r') || (ch == '\n')) {
-				msg.str[curr_char] = '\n';
-				msg.str[curr_char + 1] = '\0';
-				done = -1;
-				/* Otherwise, add the character to the
-				 * response string. */
-			} else {
-				msg.str[curr_char++] = ch;
-			}
-		} while (!done);
-
-		/* Once we are done building the response string, queue the
-		 * response to be sent to the RS232 port.
-		 */
-		while (!xQueueSendToBack(serial_str_queue, &msg,
-		                         portMAX_DELAY));
-	}
 }
 
 int main()
@@ -220,12 +168,6 @@ int main()
 	vSemaphoreCreateBinary(serial_tx_wait_sem);
 	serial_rx_queue = xQueueCreate(1, sizeof(serial_ch_msg));
 
-	/* Create a task to flash the LED. */
-	xTaskCreate(led_flash_task,
-	            (signed portCHAR *) "LED Flash",
-	            512 /* stack size */, NULL,
-	            tskIDLE_PRIORITY + 5, NULL);
-
 	/* Create tasks to queue a string to be written to the RS232 port. */
 	xTaskCreate(queue_str_task1,
 	            (signed portCHAR *) "Serial Write 1",
@@ -240,13 +182,6 @@ int main()
 	xTaskCreate(rs232_xmit_msg_task,
 	            (signed portCHAR *) "Serial Xmit Str",
 	            512 /* stack size */, NULL, tskIDLE_PRIORITY + 2, NULL);
-
-	/* Create a task to receive characters from the RS232 port and echo
-	 * them back to the RS232 port. */
-	xTaskCreate(serial_readwrite_task,
-	            (signed portCHAR *) "Serial Read/Write",
-	            512 /* stack size */, NULL,
-	            tskIDLE_PRIORITY + 10, NULL);
 
 	/* Start running the tasks. */
 	vTaskStartScheduler();
