@@ -17,3 +17,4 @@ core
 out/
 sched.grasp
 log
+./context_switch_time.txt
